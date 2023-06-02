@@ -2,6 +2,8 @@
 
 #if defined(__AVX2__)
 
+#include <immintrin.h>
+
 #include "helpa/l2.hpp"
 #include "helpa/platform/avx2/avx2_utils.hpp"
 #include "helpa/ref/l2_ref.hpp"
@@ -12,40 +14,40 @@ namespace helpa {
 
 inline float l2_fp32_fp32(const float *x, const float *y, const int32_t d) {
   int32_t da = d / 16 * 16;
-  return l2u_fp32_fp32(x, y, da) + l2_fp32_fp32_ref(x + da, y + da, d - da);
+  return l2a_fp32_fp32(x, y, da) + l2_fp32_fp32_ref(x + da, y + da, d - da);
 }
 
 inline float l2_fp32_fp16(const float *x, const fp16 *y, const int32_t d) {
   int32_t da = d / 16 * 16;
-  return l2u_fp32_fp16(x, y, da) + l2_fp32_fp16_ref(x + da, y + da, d - da);
+  return l2a_fp32_fp16(x, y, da) + l2_fp32_fp16_ref(x + da, y + da, d - da);
 }
 
 inline float l2_fp16_fp16(const fp16 *x, const fp16 *y, const int32_t d) {
   int32_t da = d / 32 * 32;
-  return l2u_fp16_fp16(x, y, da) + l2_fp16_fp16_ref(x + da, y + da, d - da);
+  return l2a_fp16_fp16(x, y, da) + l2_fp16_fp16_ref(x + da, y + da, d - da);
 }
 
 inline float l2_fp32_bf16(const float *x, const bf16 *y, const int32_t d) {
   int32_t da = d / 16 * 16;
-  return l2u_fp32_bf16(x, y, da) + l2_fp32_bf16_ref(x + da, y + da, d - da);
+  return l2a_fp32_bf16(x, y, da) + l2_fp32_bf16_ref(x + da, y + da, d - da);
 }
 
 inline float l2_bf16_bf16(const bf16 *x, const bf16 *y, const int32_t d) {
   int32_t da = d / 32 * 32;
-  return l2u_bf16_bf16(x, y, da) + l2_bf16_bf16_ref(x + da, y + da, d - da);
+  return l2a_bf16_bf16(x, y, da) + l2_bf16_bf16_ref(x + da, y + da, d - da);
 }
 
 inline int32_t l2_s8_s8(const int8_t *x, const int8_t *y, const int32_t d) {
   int32_t da = d / 64 * 64;
-  return l2u_s8_s8(x, y, da) + l2_s8_s8_ref(x + da, y + da, d - da);
+  return l2a_s8_s8(x, y, da) + l2_s8_s8_ref(x + da, y + da, d - da);
 }
 
 inline int32_t l2_u8_u8(const uint8_t *x, const uint8_t *y, const int32_t d) {
   int32_t da = d / 64 * 64;
-  return l2u_u8_u8(x, y, da) + l2_u8_u8_ref(x + da, y + da, d - da);
+  return l2a_u8_u8(x, y, da) + l2_u8_u8_ref(x + da, y + da, d - da);
 }
 
-inline float l2u_fp32_fp32(const float *x, const float *y, const int32_t d) {
+inline float l2a_fp32_fp32(const float *x, const float *y, const int32_t d) {
   __m256 sum = _mm256_setzero_ps();
   for (int32_t i = 0; i < d; i += 8) {
     auto xx = _mm256_loadu_ps(x + i);
@@ -56,7 +58,7 @@ inline float l2u_fp32_fp32(const float *x, const float *y, const int32_t d) {
   return reduce_add_f32x8(sum);
 }
 
-inline float l2u_fp32_fp16(const float *x, const fp16 *y, const int32_t d) {
+inline float l2a_fp32_fp16(const float *x, const fp16 *y, const int32_t d) {
   __m256 sum1 = _mm256_setzero_ps(), sum2 = _mm256_setzero_ps();
   for (int i = 0; i < d; i += 16) {
     {
@@ -78,7 +80,7 @@ inline float l2u_fp32_fp16(const float *x, const fp16 *y, const int32_t d) {
   return reduce_add_f32x8(sum1);
 }
 
-inline float l2u_fp16_fp16(const fp16 *x, const fp16 *y, const int32_t d) {
+inline float l2a_fp16_fp16(const fp16 *x, const fp16 *y, const int32_t d) {
   __m256 sum = _mm256_setzero_ps();
   for (int i = 0; i < d; i += 8) {
     auto xxx = _mm_loadu_si128((__m128i *)(x + i));
@@ -91,7 +93,7 @@ inline float l2u_fp16_fp16(const fp16 *x, const fp16 *y, const int32_t d) {
   return reduce_add_f32x8(sum);
 }
 
-inline float l2u_fp32_bf16(const float *x, const bf16 *y, const int32_t d) {
+inline float l2a_fp32_bf16(const float *x, const bf16 *y, const int32_t d) {
   __m256 sum1 = _mm256_setzero_ps(), sum2 = _mm256_setzero_ps();
   for (int i = 0; i < d; i += 16) {
     {
@@ -115,7 +117,7 @@ inline float l2u_fp32_bf16(const float *x, const bf16 *y, const int32_t d) {
   return reduce_add_f32x8(sum1);
 }
 
-inline float l2u_bf16_bf16(const bf16 *x, const bf16 *y, const int32_t d) {
+inline float l2a_bf16_bf16(const bf16 *x, const bf16 *y, const int32_t d) {
   __m256 sum = _mm256_setzero_ps();
   for (int i = 0; i < d; i += 8) {
     auto xxx = _mm_loadu_si128((__m128i *)(x + i));
@@ -130,12 +132,87 @@ inline float l2u_bf16_bf16(const bf16 *x, const bf16 *y, const int32_t d) {
   return reduce_add_f32x8(sum);
 }
 
-inline int32_t l2u_s8_s8(const int8_t *x, const int8_t *y, const int32_t d) {
-  return l2_s8_s8(x, y, d);
+// x[i], y[i] in [-63, 63]
+inline int32_t l2a_s8_s8(const int8_t *x, const int8_t *y, const int32_t d) {
+  __m256i sum1 = _mm256_setzero_si256(), sum2 = _mm256_setzero_si256();
+  for (int i = 0; i < d; i += 64) {
+    {
+      auto xx = _mm256_loadu_si256((__m256i *)(x + i));
+      auto yy = _mm256_loadu_si256((__m256i *)(y + i));
+      auto t = _mm256_sub_epi8(xx, yy);
+      t = _mm256_abs_epi8(t);
+      auto tmp = _mm256_maddubs_epi16(t, t);
+      sum1 = _mm256_add_epi32(
+          sum1, _mm256_cvtepi16_epi32(_mm256_extracti128_si256(tmp, 0)));
+      sum1 = _mm256_add_epi32(
+          sum1, _mm256_cvtepi16_epi32(_mm256_extracti128_si256(tmp, 1)));
+    }
+    {
+      auto xx = _mm256_loadu_si256((__m256i *)(x + i + 32));
+      auto yy = _mm256_loadu_si256((__m256i *)(y + i + 32));
+      auto t = _mm256_sub_epi8(xx, yy);
+      t = _mm256_abs_epi8(t);
+      auto tmp = _mm256_maddubs_epi16(t, t);
+      sum2 = _mm256_add_epi32(
+          sum2, _mm256_cvtepi16_epi32(_mm256_extracti128_si256(tmp, 0)));
+      sum2 = _mm256_add_epi32(
+          sum2, _mm256_cvtepi16_epi32(_mm256_extracti128_si256(tmp, 1)));
+    }
+  }
+  sum1 = _mm256_add_epi32(sum1, sum2);
+  return reduce_add_i32x8(sum1);
 }
 
-inline int32_t l2u_u8_u8(const uint8_t *x, const uint8_t *y, const int32_t d) {
-  return l2_u8_u8(x, y, d);
+// x[i], y[i] in [0, 127]
+inline int32_t l2a_u8_u8(const uint8_t *x, const uint8_t *y, const int32_t d) {
+  __m256i sum1 = _mm256_setzero_si256(), sum2 = _mm256_setzero_si256();
+  for (int i = 0; i < d; i += 64) {
+    {
+      auto xx = _mm256_loadu_si256((__m256i *)(x + i));
+      auto yy = _mm256_loadu_si256((__m256i *)(y + i));
+      auto t = _mm256_sub_epi8(xx, yy);
+      t = _mm256_abs_epi8(t);
+      auto tmp = _mm256_maddubs_epi16(t, t);
+      sum1 = _mm256_add_epi32(
+          sum1, _mm256_cvtepi16_epi32(_mm256_extracti128_si256(tmp, 0)));
+      sum1 = _mm256_add_epi32(
+          sum1, _mm256_cvtepi16_epi32(_mm256_extracti128_si256(tmp, 1)));
+    }
+    {
+      auto xx = _mm256_loadu_si256((__m256i *)(x + i + 32));
+      auto yy = _mm256_loadu_si256((__m256i *)(y + i + 32));
+      auto t = _mm256_sub_epi8(xx, yy);
+      t = _mm256_abs_epi8(t);
+      auto tmp = _mm256_maddubs_epi16(t, t);
+      sum2 = _mm256_add_epi32(
+          sum2, _mm256_cvtepi16_epi32(_mm256_extracti128_si256(tmp, 0)));
+      sum2 = _mm256_add_epi32(
+          sum2, _mm256_cvtepi16_epi32(_mm256_extracti128_si256(tmp, 1)));
+    }
+  }
+  sum1 = _mm256_add_epi32(sum1, sum2);
+  return reduce_add_i32x8(sum1);
+}
+
+inline int32_t l2a_u4_u4(const uint8_t *x, const uint8_t *y, const int32_t d) {
+  __m256i sum1 = _mm256_setzero_si256(), sum2 = _mm256_setzero_si256();
+  __m256i mask = _mm256_set1_epi8(0xf);
+  for (int i = 0; i < d; i += 64) {
+    auto xx = _mm256_loadu_si256((__m256i *)(x + i / 2));
+    auto yy = _mm256_loadu_si256((__m256i *)(y + i / 2));
+    auto xx1 = _mm256_and_si256(xx, mask);
+    auto xx2 = _mm256_and_si256(_mm256_srli_epi16(xx, 4), mask);
+    auto yy1 = _mm256_and_si256(yy, mask);
+    auto yy2 = _mm256_and_si256(_mm256_srli_epi16(yy, 4), mask);
+    auto d1 = _mm256_sub_epi8(xx1, yy1);
+    auto d2 = _mm256_sub_epi8(xx2, yy2);
+    d1 = _mm256_abs_epi8(d1);
+    d2 = _mm256_abs_epi8(d2);
+    sum1 = _mm256_add_epi16(sum1, _mm256_maddubs_epi16(d1, d1));
+    sum2 = _mm256_add_epi16(sum2, _mm256_maddubs_epi16(d2, d2));
+  }
+  sum1 = _mm256_add_epi32(sum1, sum2);
+  return reduce_add_i16x16(sum1);
 }
 
 } // namespace helpa

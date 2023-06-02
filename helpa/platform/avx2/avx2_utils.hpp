@@ -7,6 +7,7 @@
 #include "helpa/common.hpp"
 
 namespace helpa {
+
 HELPA_INLINE inline float reduce_add_f32x8(__m256 x) {
   auto sumh =
       _mm_add_ps(_mm256_castps256_ps128(x), _mm256_extractf128_ps(x, 1));
