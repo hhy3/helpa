@@ -26,10 +26,6 @@ inline float dot_bf16_bf16(const bf16 *x, const bf16 *y, const int32_t d) {
   return dot_bf16_bf16_ref(x, y, d);
 }
 
-inline int32_t dot_s8_s8(const int8_t *x, const int8_t *y, const int32_t d) {
-  return dot_s8_s8_ref(x, y, d);
-}
-
 inline int32_t dot_u8_u8(const uint8_t *x, const uint8_t *y, const int32_t d) {
   return dot_u8_u8_ref(x, y, d);
 }
@@ -52,10 +48,6 @@ inline float dota_fp32_bf16(const float *x, const bf16 *y, const int32_t d) {
 
 inline float dota_bf16_bf16(const bf16 *x, const bf16 *y, const int32_t d) {
   return dot_bf16_bf16(x, y, d);
-}
-
-inline int32_t dota_s8_s8(const int8_t *x, const int8_t *y, const int32_t d) {
-  return dot_s8_s8(x, y, d);
 }
 
 inline int32_t dota_u8_u8(const uint8_t *x, const uint8_t *y, const int32_t d) {

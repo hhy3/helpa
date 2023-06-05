@@ -1,6 +1,6 @@
 #pragma once
 
-#if defined(__AVX2__)
+#if !defined(__AVX512F__) && defined(__AVX2__)
 
 #include <immintrin.h>
 

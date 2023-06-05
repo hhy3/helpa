@@ -1,6 +1,6 @@
 #pragma once
 
-#if defined(__AVX2__)
+#if !defined(__AVX512F__) && defined(__AVX2__)
 
 #include <immintrin.h>
 
@@ -35,11 +35,6 @@ inline float l2_fp32_bf16(const float *x, const bf16 *y, const int32_t d) {
 inline float l2_bf16_bf16(const bf16 *x, const bf16 *y, const int32_t d) {
   int32_t da = d / 32 * 32;
   return l2a_bf16_bf16(x, y, da) + l2_bf16_bf16_ref(x + da, y + da, d - da);
-}
-
-inline int32_t l2_s8_s8(const int8_t *x, const int8_t *y, const int32_t d) {
-  int32_t da = d / 64 * 64;
-  return l2a_s8_s8(x, y, da) + l2_s8_s8_ref(x + da, y + da, d - da);
 }
 
 inline int32_t l2_u8_u8(const uint8_t *x, const uint8_t *y, const int32_t d) {
@@ -130,37 +125,6 @@ inline float l2a_bf16_bf16(const bf16 *x, const bf16 *y, const int32_t d) {
     sum = _mm256_add_ps(sum, _mm256_mul_ps(t, t));
   }
   return reduce_add_f32x8(sum);
-}
-
-// x[i], y[i] in [-63, 63]
-inline int32_t l2a_s8_s8(const int8_t *x, const int8_t *y, const int32_t d) {
-  __m256i sum1 = _mm256_setzero_si256(), sum2 = _mm256_setzero_si256();
-  for (int i = 0; i < d; i += 64) {
-    {
-      auto xx = _mm256_loadu_si256((__m256i *)(x + i));
-      auto yy = _mm256_loadu_si256((__m256i *)(y + i));
-      auto t = _mm256_sub_epi8(xx, yy);
-      t = _mm256_abs_epi8(t);
-      auto tmp = _mm256_maddubs_epi16(t, t);
-      sum1 = _mm256_add_epi32(
-          sum1, _mm256_cvtepi16_epi32(_mm256_extracti128_si256(tmp, 0)));
-      sum1 = _mm256_add_epi32(
-          sum1, _mm256_cvtepi16_epi32(_mm256_extracti128_si256(tmp, 1)));
-    }
-    {
-      auto xx = _mm256_loadu_si256((__m256i *)(x + i + 32));
-      auto yy = _mm256_loadu_si256((__m256i *)(y + i + 32));
-      auto t = _mm256_sub_epi8(xx, yy);
-      t = _mm256_abs_epi8(t);
-      auto tmp = _mm256_maddubs_epi16(t, t);
-      sum2 = _mm256_add_epi32(
-          sum2, _mm256_cvtepi16_epi32(_mm256_extracti128_si256(tmp, 0)));
-      sum2 = _mm256_add_epi32(
-          sum2, _mm256_cvtepi16_epi32(_mm256_extracti128_si256(tmp, 1)));
-    }
-  }
-  sum1 = _mm256_add_epi32(sum1, sum2);
-  return reduce_add_i32x8(sum1);
 }
 
 // x[i], y[i] in [0, 127]
