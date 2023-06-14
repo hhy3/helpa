@@ -37,9 +37,14 @@ inline float dot_bf16_bf16(const bf16 *x, const bf16 *y, const int32_t d) {
   return dota_bf16_bf16(x, y, da) + dot_bf16_bf16_ref(x + da, y + da, d - da);
 }
 
-inline int32_t dot_u8_u8(const uint8_t *x, const uint8_t *y, const int32_t d) {
+inline int32_t dot_u8_s8(const uint8_t *x, const int8_t *y, const int32_t d) {
   int32_t da = d / 64 * 64;
-  return dota_u8_u8(x, y, da) + dot_u8_u8_ref(x + da, y + da, d - da);
+  return dota_u8_s8(x, y, da) + dot_s8_s8_ref(x + da, y + da, d - da);
+}
+
+inline int32_t dot_s8_s8(const int8_t *x, const int8_t *y, const int32_t d) {
+  int32_t da = d / 64 * 64;
+  return dota_s8_s8(x, y, da) + dot_s8_s8_ref(x + da, y + da, d - da);
 }
 
 inline float dota_fp32_fp32(const float *x, const float *y, const int32_t d) {
@@ -154,13 +159,21 @@ inline float dota_bf16_bf16(const bf16 *x, const bf16 *y, const int32_t d) {
   return reduce_f32x4x4(sum);
 }
 
-inline int32_t dota_u8_u8(const uint8_t *x, const uint8_t *y, const int32_t d) {
+inline int32_t dota_u8_s8(const uint8_t *x, const int8_t *y, const int32_t d) {
+  int32_t sum = 0;
+  for (int32_t i = 0; i < d; ++i) {
+    sum += int32_t(x[i]) * int32_t(y[i]);
+  }
+  return sum;
+}
+
+inline int32_t dota_s8_s8(const int8_t *x, const int8_t *y, const int32_t d) {
   // int32x4_t sum = vdupq_n_s32(0);
   // for (int32_t i = 0; i < d; i += 8) {
-  //   auto xx = vld1_u8(x + i);
-  //   auto yy = vld1_u8(y + i);
-  //   auto xxx = vreinterpretq_s16_u16(vmovl_u8(xx));
-  //   auto yyy = vreinterpretq_s16_u16(vmovl_u8(yy));
+  //   auto xx = vld1_s8(x + i);
+  //   auto yy = vld1_s8(y + i);
+  //   auto xxx = vreinterpretq_s16_u16(vmovl_s8(xx));
+  //   auto yyy = vreinterpretq_s16_u16(vmovl_s8(yy));
   //   auto t = vsubq_s16(xxx, yyy);
   //   sum = vaddw_s16(sum, vget_low_s16(t));
   //   sum = vaddw_s16(sum, vget_high_s16(t));

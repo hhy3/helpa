@@ -37,9 +37,14 @@ inline float l2_bf16_bf16(const bf16 *x, const bf16 *y, const int32_t d) {
   return l2a_bf16_bf16(x, y, da) + l2_bf16_bf16_ref(x + da, y + da, d - da);
 }
 
-inline int32_t l2_u8_u8(const uint8_t *x, const uint8_t *y, const int32_t d) {
+inline int32_t l2_u8_s8(const uint8_t *x, const int8_t *y, const int32_t d) {
   int32_t da = d / 64 * 64;
-  return l2a_u8_u8(x, y, da) + l2_u8_u8_ref(x + da, y + da, d - da);
+  return l2a_u8_s8(x, y, da) + l2_u8_s8_ref(x + da, y + da, d - da);
+}
+
+inline int32_t l2_s8_s8(const int8_t *x, const int8_t *y, const int32_t d) {
+  int32_t da = d / 64 * 64;
+  return l2a_s8_s8(x, y, da) + l2_s8_s8_ref(x + da, y + da, d - da);
 }
 
 inline float l2a_fp32_fp32(const float *x, const float *y, const int32_t d) {
@@ -174,15 +179,24 @@ inline float l2a_bf16_bf16(const bf16 *x, const bf16 *y, const int32_t d) {
   return reduce_f32x4x4(sum);
 }
 
-inline int32_t l2a_u8_u8(const uint8_t *x, const uint8_t *y, const int32_t d) {
+inline int32_t l2a_u8_s8(const uint8_t *x, const int8_t *y, const int32_t d) {
+  int32_t sum = 0;
+  for (int32_t i = 0; i < d; ++i) {
+    auto d = int32_t(x[i]) - int32_t(y[i]);
+    sum += d * d;
+  }
+  return sum;
+}
+
+inline int32_t l2a_s8_s8(const int8_t *x, const int8_t *y, const int32_t d) {
   // int32x4_t sum = vdupq_n_s32(0);
   // for (int32_t i = 0; i < d; i += 16) {
-  //   auto uu = vld1q_u8(x + i);
-  //   auto zz = vld1q_u8(y + i);
-  //   auto xx0 = vreinterpretq_s16_u16(vmovl_u8(vget_low_u8(uu)));
-  //   auto xx1 = vreinterpretq_s16_u16(vmovl_u8(vget_high_u8(uu)));
-  //   auto yy0 = vreinterpretq_s16_u16(vmovl_u8(vget_low_u8(zz)));
-  //   auto yy1 = vreinterpretq_s16_u16(vmovl_u8(vget_high_u8(zz)));
+  //   auto uu = vld1q_s8(x + i);
+  //   auto zz = vld1q_s8(y + i);
+  //   auto xx0 = vreinterpretq_s16_u16(vmovl_s8(vget_low_s8(uu)));
+  //   auto xx1 = vreinterpretq_s16_u16(vmovl_s8(vget_high_s8(uu)));
+  //   auto yy0 = vreinterpretq_s16_u16(vmovl_s8(vget_low_s8(zz)));
+  //   auto yy1 = vreinterpretq_s16_u16(vmovl_s8(vget_high_s8(zz)));
   //   auto t0 = vsubq_s16(xx0, yy0);
   //   auto t1 = vsubq_s16(xx1, yy1);
   //   t0 = vmulq_s16(t0, t0);
