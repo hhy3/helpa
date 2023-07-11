@@ -24,7 +24,6 @@ bench_l2_fp32_fp32(benchmark::State& s) {
         benchmark::DoNotOptimize(helpa::l2_fp32_fp32(x.data(), y.data(), dim));
     }
 }
-BENCHMARK(bench_l2_fp32_fp32);
 
 static void
 bench_l2_u8_s8(benchmark::State& s) {
@@ -42,7 +41,6 @@ bench_l2_u8_s8(benchmark::State& s) {
         benchmark::DoNotOptimize(helpa::l2_u8_s8(x.data(), y.data(), dim));
     }
 }
-BENCHMARK(bench_l2_u8_s8);
 
 static void
 bench_l2_s8_s8(benchmark::State& s) {
@@ -57,7 +55,6 @@ bench_l2_s8_s8(benchmark::State& s) {
         benchmark::DoNotOptimize(helpa::l2_s8_s8(x.data(), y.data(), dim));
     }
 }
-BENCHMARK(bench_l2_s8_s8);
 
 static void
 bench_l2a_u4_u4(benchmark::State& s) {
@@ -72,7 +69,6 @@ bench_l2a_u4_u4(benchmark::State& s) {
         benchmark::DoNotOptimize(helpa::l2a_u4_u4(x.data(), y.data(), dim));
     }
 }
-BENCHMARK(bench_l2a_u4_u4);
 
 static void
 bench_dot_fp32_fp32(benchmark::State& s) {
@@ -87,7 +83,6 @@ bench_dot_fp32_fp32(benchmark::State& s) {
         benchmark::DoNotOptimize(helpa::dot_fp32_fp32(x.data(), y.data(), dim));
     }
 }
-BENCHMARK(bench_l2_fp32_fp32);
 
 static void
 bench_dot_u8_s8(benchmark::State& s) {
@@ -105,7 +100,6 @@ bench_dot_u8_s8(benchmark::State& s) {
         benchmark::DoNotOptimize(helpa::l2_u8_s8(x.data(), y.data(), dim));
     }
 }
-BENCHMARK(bench_dot_u8_s8);
 
 static void
 bench_dot_s8_s8(benchmark::State& s) {
@@ -120,7 +114,6 @@ bench_dot_s8_s8(benchmark::State& s) {
         benchmark::DoNotOptimize(helpa::dot_s8_s8(x.data(), y.data(), dim));
     }
 }
-BENCHMARK(bench_dot_s8_s8);
 
 static void
 bench_dota_u4_u4(benchmark::State& s) {
@@ -135,4 +128,12 @@ bench_dota_u4_u4(benchmark::State& s) {
         benchmark::DoNotOptimize(helpa::dota_u4_u4(x.data(), y.data(), dim));
     }
 }
+
+BENCHMARK(bench_l2_fp32_fp32);
+BENCHMARK(bench_l2_s8_s8);
+BENCHMARK(bench_l2_u8_s8);
+BENCHMARK(bench_l2a_u4_u4);
+BENCHMARK(bench_dot_fp32_fp32);
+BENCHMARK(bench_dot_s8_s8);
+BENCHMARK(bench_dot_u8_s8);
 BENCHMARK(bench_dota_u4_u4);
