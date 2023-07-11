@@ -212,11 +212,38 @@ dota_bf16_bf16(const bf16* x, const bf16* y, const int32_t d) {
 
 inline int32_t
 dota_s8_s8(const int8_t* x, const int8_t* y, const int32_t d) {
+#if defined(__AVX512VNNI__)
+    auto sum = _mm512_setzero_si512();
+    for (int i = 0; i < d; i += 64) {
+        auto xx = _mm512_loadu_si512(x + i);
+        auto yy = _mm512_loadu_si512(y + i);
+        auto mask = _mm512_and_si512(xx, _mm512_set1_epi8(0x80));
+        auto axx = _mm512_and_epi32(xx, _mm512_set1_epi8(0x7f));
+        auto syy = _mm512_xor_epi32(yy, _mm512_and_epi32(mask, _mm512_set1_epi8(0xff)));
+        asm("vpdpbusd %1, %2, %0" : "+x"(sum) : "mx"(axx), "x"(syy));
+    }
+    return -reduce_add_i32x16(sum);
+
+#elif defined(__AVX2__)
+    auto sum = _mm256_setzero_si256();
+    for (int i = 0; i < d; i += 32) {
+        auto xx = _mm256_loadu_si256((__m256i*)(x + i));
+        auto yy = _mm256_loadu_si256((__m256i*)(y + i));
+        auto mask = _mm256_and_si256(xx, _mm256_set1_epi8(0x80));
+        auto axx = _mm256_and_si256(xx, _mm256_set1_epi8(0x7f));
+        auto syy = _mm256_xor_si256(yy, _mm256_and_si256(mask, _mm256_set1_epi8(0xff)));
+        auto tmp = _mm256_maddubs_epi16(axx, syy);
+        sum = _mm256_add_epi32(sum, _mm256_cvtepi16_epi32(_mm256_extracti128_si256(tmp, 0)));
+        sum = _mm256_add_epi32(sum, _mm256_cvtepi16_epi32(_mm256_extracti128_si256(tmp, 1)));
+    }
+    return -reduce_add_i32x8(sum);
+#else
     int32_t sum = 0;
     for (int i = 0; i < d; ++i) {
         sum += int32_t(x[i]) * int32_t(y[i]);
     }
     return -sum;
+#endif
 }
 
 inline int32_t
@@ -283,11 +310,17 @@ dota_u4_u4(const uint8_t* x, const uint8_t* y, const int32_t d) {
         auto xx2 = _mm256_and_si256(_mm256_srli_epi16(xx, 4), mask);
         auto yy1 = _mm256_and_si256(yy, mask);
         auto yy2 = _mm256_and_si256(_mm256_srli_epi16(yy, 4), mask);
-        sum1 = _mm256_add_epi16(sum1, _mm256_maddubs_epi16(xx1, yy1));
-        sum2 = _mm256_add_epi16(sum2, _mm256_maddubs_epi16(xx2, yy2));
+        auto dot1 = _mm256_maddubs_epi16(xx1, yy1);
+        auto dot2 = _mm256_maddubs_epi16(xx2, yy2);
+        auto dot11 = _mm256_cvtepi16_epi32(_mm256_extracti128_si256(dot1, 0));
+        auto dot21 = _mm256_cvtepi16_epi32(_mm256_extracti128_si256(dot2, 0));
+        auto dot12 = _mm256_cvtepi16_epi32(_mm256_extracti128_si256(dot1, 1));
+        auto dot22 = _mm256_cvtepi16_epi32(_mm256_extracti128_si256(dot2, 1));
+        sum1 = _mm256_add_epi32(sum1, _mm256_add_epi32(dot11, dot12));
+        sum2 = _mm256_add_epi32(sum1, _mm256_add_epi32(dot21, dot22));
     }
     sum1 = _mm256_add_epi32(sum1, sum2);
-    return -reduce_add_i16x16(sum1);
+    return -reduce_add_i32x8(sum1);
 #endif
 }
 

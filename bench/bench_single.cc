@@ -108,6 +108,11 @@ bench_dot_s8_s8(benchmark::State& s) {
     random_bytes_engine rng;
     std::generate(x.begin(), x.end(), rng);
     std::generate(y.begin(), y.end(), rng);
+
+#if !defined(__AVX512VNNI__)  // Results are not accurate is vnni is not enabled
+    for (auto& t : x) t &= (1 << 3) - 1;
+    for (auto& t : y) t &= (1 << 3) - 1;
+#endif
     check_int32_equal(helpa::dot_s8_s8_ref(x.data(), y.data(), dim), helpa::dot_s8_s8(x.data(), y.data(), dim));
 
     for (auto _ : s) {
