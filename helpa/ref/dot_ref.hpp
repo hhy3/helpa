@@ -10,7 +10,7 @@ inline float dot_fp32_fp32_ref(const float *x, const float *y,
   for (int32_t i = 0; i < d; ++i) {
     ans += x[i] * y[i];
   }
-  return ans;
+  return -ans;
 }
 
 inline float dot_fp32_fp16_ref(const float *x, const fp16 *y, const int32_t d) {
@@ -18,7 +18,7 @@ inline float dot_fp32_fp16_ref(const float *x, const fp16 *y, const int32_t d) {
   for (int32_t i = 0; i < d; ++i) {
     ans += x[i] * float(y[i]);
   }
-  return ans;
+  return -ans;
 }
 
 inline float dot_fp16_fp16_ref(const fp16 *x, const fp16 *y, const int32_t d) {
@@ -26,7 +26,7 @@ inline float dot_fp16_fp16_ref(const fp16 *x, const fp16 *y, const int32_t d) {
   for (int32_t i = 0; i < d; ++i) {
     ans += float(x[i]) * float(y[i]);
   }
-  return ans;
+  return -ans;
 }
 
 inline float dot_fp32_bf16_ref(const float *x, const bf16 *y, const int32_t d) {
@@ -34,7 +34,7 @@ inline float dot_fp32_bf16_ref(const float *x, const bf16 *y, const int32_t d) {
   for (int32_t i = 0; i < d; ++i) {
     ans += x[i] * float(y[i]);
   }
-  return ans;
+  return -ans;
 }
 
 inline float dot_bf16_bf16_ref(const bf16 *x, const bf16 *y, const int32_t d) {
@@ -42,7 +42,7 @@ inline float dot_bf16_bf16_ref(const bf16 *x, const bf16 *y, const int32_t d) {
   for (int32_t i = 0; i < d; ++i) {
     ans += float(x[i]) * float(y[i]);
   }
-  return ans;
+  return -ans;
 }
 
 inline int32_t dot_u8_s8_ref(const uint8_t *x, const int8_t *y,
@@ -51,7 +51,7 @@ inline int32_t dot_u8_s8_ref(const uint8_t *x, const int8_t *y,
   for (int32_t i = 0; i < d; ++i) {
     ans += int32_t(x[i]) * int32_t(y[i]);
   }
-  return ans;
+  return -ans;
 }
 
 inline int32_t dot_s8_s8_ref(const int8_t *x, const int8_t *y,
@@ -60,7 +60,7 @@ inline int32_t dot_s8_s8_ref(const int8_t *x, const int8_t *y,
   for (int32_t i = 0; i < d; ++i) {
     ans += int32_t(x[i]) * int32_t(y[i]);
   }
-  return ans;
+  return -ans;
 }
 
 inline int32_t dot_u4_u4_ref(const uint8_t *x, const uint8_t *y,
@@ -71,7 +71,7 @@ inline int32_t dot_u4_u4_ref(const uint8_t *x, const uint8_t *y,
     int32_t yy = y[i] >> ((i & 1) * 4) & 15;
     ans += xx * yy;
   }
-  return ans;
+  return -ans;
 }
 
 } // namespace helpa

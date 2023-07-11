@@ -17,7 +17,7 @@ struct bf16 {
 
   bf16() = default;
 
-  explicit bf16(float f)
+  bf16(float f)
       : x(
 #if defined(ROUND_MODE_TO_NEAREST)
             round_to_nearest(f)
@@ -32,10 +32,10 @@ struct bf16 {
         ) {
   }
 
-  template <typename F, std::enable_if_t<std::is_convertible_v<F, float>>>
-  explicit bf16(F f) : bf16(float(f)) {}
+  template <typename F, std::enable_if_t<std::is_convertible_v<F, float>>* = nullptr>
+  bf16(F f) : bf16(float(f)) {}
 
-  explicit operator float() const {
+  operator float() const {
     uint32_t buf = 0;
     std::memcpy(reinterpret_cast<char *>(&buf) + 2, &x, 2);
     auto ptr = reinterpret_cast<void *>(&buf);
@@ -66,7 +66,7 @@ struct fp16 {
 
   fp16() = default;
 
-  explicit fp16(float f) {
+  fp16(float f) {
 #if defined(__F16C__)
     __m128 xf = _mm_set1_ps(f);
     __m128i xi =
@@ -92,7 +92,11 @@ struct fp16 {
 #endif
   }
 
-  explicit operator float() const {
+  template <typename F, std::enable_if_t<std::is_convertible_v<F, float>>* = nullptr>
+  fp16(F f) : fp16(float(f)) {
+  }
+
+  operator float() const {
 #if defined(__F16C__)
     __m128i xi = _mm_set1_epi16(x);
     __m128 xf = _mm_cvtph_ps(xi);
@@ -127,7 +131,7 @@ struct e5m2 {
 
   e5m2() = default;
 
-  explicit e5m2(fp16 f) {
+  e5m2(fp16 f) {
 #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
     std::memcpy(&x, &f, 1);
 #else
@@ -135,9 +139,13 @@ struct e5m2 {
 #endif
   }
 
-  explicit e5m2(float f) : e5m2(fp16(f)) {}
+  e5m2(float f) : e5m2(fp16(f)) {}
 
-  explicit operator fp16() const {
+  template <typename F, std::enable_if_t<std::is_convertible_v<F, float>>* = nullptr>
+  e5m2(F f) : e5m2(float(f)) {
+  }
+
+  operator fp16() const {
     uint16_t buf = 0;
 #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
     std::memcpy(reinterpret_cast<char *>(&buf), &x, 1);
@@ -148,7 +156,7 @@ struct e5m2 {
     return *reinterpret_cast<fp16 *>(ptr);
   }
 
-  explicit operator float() const { return float(fp16(*this)); }
+  operator float() const { return float(fp16(*this)); }
 };
 
 } // namespace helpa

@@ -23,3 +23,8 @@ endif(USE_AVX512FP16)
 
 add_executable(main main.cc)
 target_link_libraries(main helpa)
+
+option(WITH_BENCH "Build benchmark" ON)
+if (WITH_BENCH)
+    add_subdirectory(bench)
+endif()
