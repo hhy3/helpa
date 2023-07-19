@@ -37,11 +37,6 @@ inline float l2_bf16_bf16(const bf16 *x, const bf16 *y, const int32_t d) {
   return l2a_bf16_bf16(x, y, da) + l2_bf16_bf16_ref(x + da, y + da, d - da);
 }
 
-inline int32_t l2_u8_s8(const uint8_t *x, const int8_t *y, const int32_t d) {
-  int32_t da = d / 64 * 64;
-  return l2a_u8_s8(x, y, da) + l2_u8_s8_ref(x + da, y + da, d - da);
-}
-
 inline int32_t l2_s8_s8(const int8_t *x, const int8_t *y, const int32_t d) {
   int32_t da = d / 64 * 64;
   return l2a_s8_s8(x, y, da) + l2_s8_s8_ref(x + da, y + da, d - da);
@@ -177,15 +172,6 @@ inline float l2a_bf16_bf16(const bf16 *x, const bf16 *y, const int32_t d) {
     sum.val[3] = vmlaq_f32(sum.val[3], t3, t3);
   }
   return reduce_f32x4x4(sum);
-}
-
-inline int32_t l2a_u8_s8(const uint8_t *x, const int8_t *y, const int32_t d) {
-  int32_t sum = 0;
-  for (int32_t i = 0; i < d; ++i) {
-    auto d = int32_t(x[i]) - int32_t(y[i]);
-    sum += d * d;
-  }
-  return sum;
 }
 
 inline int32_t l2a_s8_s8(const int8_t *x, const int8_t *y, const int32_t d) {

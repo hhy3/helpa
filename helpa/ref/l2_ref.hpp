@@ -55,7 +55,7 @@ l2_bf16_bf16_ref(const bf16* x, const bf16* y, const int32_t d) {
 }
 
 inline int32_t
-l2_u8_s8_ref(const uint8_t* x, const int8_t* y, const int32_t d) {
+l2_u7_u7_ref(const uint8_t* x, const uint8_t* y, const int32_t d) {
     int32_t ans = 0;
     for (int32_t i = 0; i < d; ++i) {
         auto t = int32_t(x[i]) - int32_t(y[i]);
