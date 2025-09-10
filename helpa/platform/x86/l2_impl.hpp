@@ -1,7 +1,8 @@
 #pragma once
 
-#include <immintrin.h>
-#if defined(__AVX2__)
+#include "helpa/common.hpp"
+
+#if defined(HELPA_USE_X86)
 
 #include "helpa/l2.hpp"
 #include "helpa/platform/x86/utils.hpp"
@@ -41,20 +42,14 @@ l2_bf16_bf16(const bf16* x, const bf16* y, const int32_t d) {
 }
 
 inline int32_t
-l2_u7_u7(const uint8_t* x, const uint8_t* y, const int32_t d) {
+l2_s7_s7(const int8_t* x, const int8_t* y, const int32_t d) {
     int32_t da = d / 64 * 64;
-    return l2a_u7_u7(x, y, da) + l2_u7_u7_ref(x + da, y + da, d - da);
-}
-
-inline int32_t
-l2_s8_s8(const int8_t* x, const int8_t* y, const int32_t d) {
-    int32_t da = d / 64 * 64;
-    return l2a_s8_s8(x, y, da) + l2_s8_s8_ref(x + da, y + da, d - da);
+    return l2a_s7_s7(x, y, da) + l2_s7_s7_ref(x + da, y + da, d - da);
 }
 
 inline float
 l2a_fp32_fp32(const float* x, const float* y, const int32_t d) {
-#if defined(__AVX512F__)
+#if defined(HELPA_USE_AVX512)
     __m512 sum = _mm512_setzero_ps();
     for (int32_t i = 0; i < d; i += 16) {
         auto xx = _mm512_loadu_ps(x + i);
@@ -77,7 +72,7 @@ l2a_fp32_fp32(const float* x, const float* y, const int32_t d) {
 
 inline float
 l2a_fp32_fp16(const float* x, const fp16* y, const int32_t d) {
-#if defined(__AVX512F__)
+#if defined(HELPA_USE_AVX512)
     __m512 sum = _mm512_setzero_ps();
     for (int i = 0; i < d; i += 16) {
         auto xx = _mm512_loadu_ps(x + i);
@@ -112,7 +107,7 @@ l2a_fp32_fp16(const float* x, const fp16* y, const int32_t d) {
 
 inline float
 l2a_fp16_fp16(const fp16* x, const fp16* y, const int32_t d) {
-#if defined(USE_AVX512FP16) && defined(__AVX512FP16__)
+#if defined(HELPA_USE_AVX512FP16) && defined(__AVX512FP16__)
     auto sum = _mm512_setzero_ph();
     for (int i = 0; i < d; i += 32) {
         auto xx = _mm512_loadu_ph(x + i);
@@ -121,9 +116,9 @@ l2a_fp16_fp16(const fp16* x, const fp16* y, const int32_t d) {
         sum = _mm512_fmadd_ph(d, d, sum);
     }
     return reduce_add_f16x32(sum);
-#elif defined(__AVX512F__)
+#elif defined(HELPA_USE_AVX512)
     __m512 sum = _mm512_setzero_ps();
-    for (int i = 0; i < d; i += 8) {
+    for (int i = 0; i < d; i += 16) {
         auto xxx = _mm256_loadu_si256((__m256i*)(x + i));
         auto xx = _mm512_cvtph_ps(xxx);
         auto zz = _mm256_loadu_si256((__m256i*)(y + i));
@@ -148,7 +143,7 @@ l2a_fp16_fp16(const fp16* x, const fp16* y, const int32_t d) {
 
 inline float
 l2a_fp32_bf16(const float* x, const bf16* y, const int32_t d) {
-#if defined(__AVX512F__)
+#if defined(HELPA_USE_AVX512)
     __m512 sum = _mm512_setzero_ps();
     for (int i = 0; i < d; i += 16) {
         auto xx = _mm512_loadu_ps(x + i);
@@ -186,7 +181,7 @@ l2a_fp32_bf16(const float* x, const bf16* y, const int32_t d) {
 
 inline float
 l2a_bf16_bf16(const bf16* x, const bf16* y, const int32_t d) {
-#if defined(USE_AVX512BF16) && defined(__AVX512BF16__)
+#if defined(HELPA_USE_AVX512BF16) && defined(__AVX512BF16__)
     auto s1 = _mm512_setzero_ps(), s2 = _mm512_setzero_ps();
     for (int i = 0; i < d; i += 32) {
         auto xx = (__m512bh)_mm512_loadu_si512(x + i);
@@ -195,7 +190,7 @@ l2a_bf16_bf16(const bf16* x, const bf16* y, const int32_t d) {
         s2 = _mm512_dpbf16_ps(s2, xx, yy);
     }
     return reduce_add_f32x16(s1) - 2.0f * reduce_add_f32x16(s2);
-#elif defined(__AVX512F__)
+#elif defined(HELPA_USE_AVX512)
     __m512 sum = _mm512_setzero_ps();
     for (int i = 0; i < d; i += 16) {
         auto xxx = _mm256_loadu_si256((__m256i*)(x + i));
@@ -225,45 +220,43 @@ l2a_bf16_bf16(const bf16* x, const bf16* y, const int32_t d) {
 }
 
 inline int32_t
-l2a_s8_s8(const int8_t* x, const int8_t* y, const int32_t d) {
-    int32_t sum = 0;
-    for (int i = 0; i < d; ++i) {
-        int32_t t = int32_t(x[i]) - int32_t(y[i]);
-        sum += t * t;
-    }
-    return sum;
-}
-
-inline int32_t
-l2a_u7_u7(const uint8_t* x, const uint8_t* y, const int32_t d) {
-#if defined(__AVX512VNNI__)
+l2a_s7_s7(const int8_t* x, const int8_t* y, const int32_t d) {
+#if defined(HELPA_USE_VNNI)
     __m512i sum = _mm512_setzero_epi32();
     for (int i = 0; i < d; i += 64) {
         auto xx = _mm512_loadu_si512(x + i);
         auto yy = _mm512_loadu_si512(y + i);
         auto t = _mm512_sub_epi8(xx, yy);
         t = _mm512_abs_epi8(t);
-        // GCC bug: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=94663
-        // sum = _mm512_dpbusd_epi32(sum, t, t);
-        asm("vpdpbusd %1, %2, %0" : "+x"(sum) : "mx"(t), "x"(t));
+        sum = dp_u8s8x64(sum, t, t);
     }
     return reduce_add_i32x16(sum);
 #else
-    __m256i sum = _mm256_setzero_si256();
-    for (int i = 0; i < d; i += 32) {
-        auto xx = _mm256_loadu_si256((__m256i*)(x + i));
-        auto yy = _mm256_loadu_si256((__m256i*)(y + i));
-        auto t = _mm256_sub_epi8(xx, yy);
-        t = _mm256_abs_epi8(t);
-        sum = dp_u8s8x32(sum, t, t);
+    __m256i sum1 = _mm256_setzero_si256(), sum2 = _mm256_setzero_si256();
+    for (int i = 0; i < d; i += 64) {
+        {
+            auto xx = _mm256_loadu_si256((__m256i*)(x + i));
+            auto yy = _mm256_loadu_si256((__m256i*)(y + i));
+            auto t = _mm256_sub_epi8(xx, yy);
+            t = _mm256_abs_epi8(t);
+            sum1 = dp_u8s8x32(sum1, t, t);
+        }
+        {
+            auto xx = _mm256_loadu_si256((__m256i*)(x + i + 32));
+            auto yy = _mm256_loadu_si256((__m256i*)(y + i + 32));
+            auto t = _mm256_sub_epi8(xx, yy);
+            t = _mm256_abs_epi8(t);
+            sum2 = dp_u8s8x32(sum2, t, t);
+        }
     }
-    return reduce_add_i32x8(sum);
+    sum1 = _mm256_add_epi32(sum1, sum2);
+    return reduce_add_i32x8(sum1);
 #endif
 }
 
 inline int32_t
 l2a_u4_u4(const uint8_t* x, const uint8_t* y, const int32_t d) {
-#if defined(__AVX512VNNI__)
+#if defined(HELPA_USE_VNNI)
     __m512i sum1 = _mm512_setzero_epi32(), sum2 = _mm512_setzero_epi32();
     __m512i mask = _mm512_set1_epi8(0xf);
     for (int i = 0; i < d; i += 128) {
@@ -277,10 +270,8 @@ l2a_u4_u4(const uint8_t* x, const uint8_t* y, const int32_t d) {
         auto d2 = _mm512_sub_epi8(xx2, yy2);
         d1 = _mm512_abs_epi8(d1);
         d2 = _mm512_abs_epi8(d2);
-        // sum1 = _mm512_dpbusd_epi32(sum1, d1, d1);
-        // sum2 = _mm512_dpbusd_epi32(sum2, d2, d2);
-        asm("vpdpbusd %1, %2, %0" : "+x"(sum1) : "mx"(d1), "x"(d1));
-        asm("vpdpbusd %1, %2, %0" : "+x"(sum2) : "mx"(d2), "x"(d2));
+        sum1 = dp_u8s8x64(sum1, d1, d1);
+        sum2 = dp_u8s8x64(sum2, d2, d2);
     }
     sum1 = _mm512_add_epi32(sum1, sum2);
     return reduce_add_i32x16(sum1);
@@ -298,13 +289,82 @@ l2a_u4_u4(const uint8_t* x, const uint8_t* y, const int32_t d) {
         auto d2 = _mm256_sub_epi8(xx2, yy2);
         d1 = _mm256_abs_epi8(d1);
         d2 = _mm256_abs_epi8(d2);
-        sum1 = dp_u8s8x32(sum1, d1, d1);
-        sum2 = dp_u8s8x32(sum2, d2, d2);
+        sum1 = _mm256_add_epi16(sum1, _mm256_maddubs_epi16(d1, d1));
+        sum2 = _mm256_add_epi16(sum2, _mm256_maddubs_epi16(d2, d2));
     }
     sum1 = _mm256_add_epi32(sum1, sum2);
-    return reduce_add_i32x8(sum1);
+    return reduce_add_i16x16(sum1);
 #endif
 }
+
+int32_t
+l2a_u2_u2(const uint8_t* x, const uint8_t* y, int32_t d) {
+#if defined(HELPA_USE_VNNI)
+    __m512i sum1 = _mm512_setzero_epi32(), sum2 = _mm512_setzero_epi32(), sum3 = _mm512_setzero_epi32(),
+            sum4 = _mm512_setzero_si512();
+    __m512i mask = _mm512_set1_epi8(0x3);
+    for (int i = 0; i < d; i += 256) {
+        auto xx = _mm512_loadu_si512((__m512i*)(x + i / 4));
+        auto yy = _mm512_loadu_si512((__m512i*)(y + i / 4));
+        auto xx1 = _mm512_and_si512(xx, mask);
+        auto xx2 = _mm512_and_si512(_mm512_srli_epi16(xx, 2), mask);
+        auto xx3 = _mm512_and_si512(_mm512_srli_epi16(xx, 4), mask);
+        auto xx4 = _mm512_and_si512(_mm512_srli_epi16(xx, 6), mask);
+        auto yy1 = _mm512_and_si512(yy, mask);
+        auto yy2 = _mm512_and_si512(_mm512_srli_epi16(yy, 2), mask);
+        auto yy3 = _mm512_and_si512(_mm512_srli_epi16(yy, 4), mask);
+        auto yy4 = _mm512_and_si512(_mm512_srli_epi16(yy, 6), mask);
+        auto d1 = _mm512_sub_epi8(xx1, yy1);
+        auto d2 = _mm512_sub_epi8(xx2, yy2);
+        auto d3 = _mm512_sub_epi8(xx3, yy3);
+        auto d4 = _mm512_sub_epi8(xx4, yy4);
+        d1 = _mm512_abs_epi8(d1);
+        d2 = _mm512_abs_epi8(d2);
+        d3 = _mm512_abs_epi8(d3);
+        d4 = _mm512_abs_epi8(d4);
+        sum1 = helpa::dp_u8s8x64(sum1, d1, d1);
+        sum2 = helpa::dp_u8s8x64(sum2, d2, d2);
+        sum3 = helpa::dp_u8s8x64(sum3, d3, d3);
+        sum4 = helpa::dp_u8s8x64(sum4, d4, d4);
+    }
+    sum1 = _mm512_add_epi32(sum1, sum2);
+    sum3 = _mm512_add_epi32(sum3, sum4);
+    sum1 = _mm512_add_epi32(sum1, sum3);
+    return reduce_add_i32x16(sum1);
+#else
+    __m256i sum1 = _mm256_setzero_si256(), sum2 = _mm256_setzero_si256(), sum3 = _mm256_setzero_si256(),
+            sum4 = _mm256_setzero_si256();
+    __m256i mask = _mm256_set1_epi8(0x3);
+    for (int i = 0; i < d; i += 128) {
+        auto xx = _mm256_loadu_si256((__m256i*)(x + i / 4));
+        auto yy = _mm256_loadu_si256((__m256i*)(y + i / 4));
+        auto xx1 = _mm256_and_si256(xx, mask);
+        auto xx2 = _mm256_and_si256(_mm256_srli_epi16(xx, 2), mask);
+        auto xx3 = _mm256_and_si256(_mm256_srli_epi16(xx, 4), mask);
+        auto xx4 = _mm256_and_si256(_mm256_srli_epi16(xx, 6), mask);
+        auto yy1 = _mm256_and_si256(yy, mask);
+        auto yy2 = _mm256_and_si256(_mm256_srli_epi16(yy, 2), mask);
+        auto yy3 = _mm256_and_si256(_mm256_srli_epi16(yy, 4), mask);
+        auto yy4 = _mm256_and_si256(_mm256_srli_epi16(yy, 6), mask);
+        auto d1 = _mm256_sub_epi8(xx1, yy1);
+        auto d2 = _mm256_sub_epi8(xx2, yy2);
+        auto d3 = _mm256_sub_epi8(xx3, yy3);
+        auto d4 = _mm256_sub_epi8(xx4, yy4);
+        d1 = _mm256_abs_epi8(d1);
+        d2 = _mm256_abs_epi8(d2);
+        d3 = _mm256_abs_epi8(d3);
+        d4 = _mm256_abs_epi8(d4);
+        sum1 = helpa::dp_u8s8x32(sum1, d1, d1);
+        sum2 = helpa::dp_u8s8x32(sum2, d2, d2);
+        sum3 = helpa::dp_u8s8x32(sum3, d3, d3);
+        sum4 = helpa::dp_u8s8x32(sum4, d4, d4);
+    }
+    sum1 = _mm256_add_epi32(sum1, sum2);
+    sum3 = _mm256_add_epi32(sum3, sum4);
+    sum1 = _mm256_add_epi32(sum1, sum3);
+    return reduce_add_i32x8(sum1);
+#endif
+};
 
 }  // namespace helpa
 

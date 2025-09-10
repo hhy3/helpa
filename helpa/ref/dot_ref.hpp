@@ -50,15 +50,6 @@ dot_bf16_bf16_ref(const bf16* x, const bf16* y, const int32_t d) {
 }
 
 inline int32_t
-dot_u8_s8_ref(const uint8_t* x, const int8_t* y, const int32_t d) {
-    int32_t ans = 0;
-    for (int32_t i = 0; i < d; ++i) {
-        ans += int32_t(x[i]) * int32_t(y[i]);
-    }
-    return -ans;
-}
-
-inline int32_t
 dot_s8_s8_ref(const int8_t* x, const int8_t* y, const int32_t d) {
     int32_t ans = 0;
     for (int32_t i = 0; i < d; ++i) {
@@ -71,8 +62,8 @@ inline int32_t
 dot_u4_u4_ref(const uint8_t* x, const uint8_t* y, const int32_t d) {
     int32_t ans = 0;
     for (int32_t i = 0; i < d; ++i) {
-        int32_t xx = x[i / 2] >> ((i & 1) * 4) & 15;
-        int32_t yy = y[i / 2] >> ((i & 1) * 4) & 15;
+        int32_t xx = x[i] >> ((i & 1) * 4) & 15;
+        int32_t yy = y[i] >> ((i & 1) * 4) & 15;
         ans += xx * yy;
     }
     return -ans;

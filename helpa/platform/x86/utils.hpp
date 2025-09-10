@@ -2,13 +2,11 @@
 
 #include "helpa/common.hpp"
 
-#if defined(__AVX2__)
+#if defined(HELPA_USE_X86)
+
 #include <immintrin.h>
-#endif
 
 namespace helpa {
-
-#if defined(__AVX2__)
 
 HELPA_INLINE inline float
 reduce_add_f32x8(__m256 x) {
@@ -49,40 +47,25 @@ cvti4x32_i8x32(__m128i x) {
 
 HELPA_INLINE inline __m256i
 dp_u8s8x32(__m256i sum, __m256i x, __m256i y) {
-#if defined(HELPA_APPROXIMATE)
-    const __m256i ones = _mm256_set1_epi16(1);
-    auto tmp = _mm256_maddubs_epi16(x, y);
-    sum = _mm256_add_epi32(sum, _mm256_madd_epi16(tmp, ones));
-    return sum;
+#if defined(__AVX512VNNI__)
+    return _mm256_dpbusd_epi32(sum, x, y);
 #else
     const __m256i ones = _mm256_set1_epi16(1);
-    const __m256i hb = _mm256_set1_epi8(0x80);
-    auto s1 = _mm256_maddubs_epi16(_mm256_and_si256(hb, x), y);
-    auto s2 = _mm256_maddubs_epi16(_mm256_andnot_si256(hb, x), y);
-    sum = _mm256_add_epi32(sum, _mm256_madd_epi16(s1, ones));
-    sum = _mm256_add_epi32(sum, _mm256_madd_epi16(s2, ones));
-    return sum;
+    auto tmp = _mm256_maddubs_epi16(x, y);
+    return _mm256_add_epi32(sum, _mm256_madd_epi16(tmp, ones));
 #endif
 }
 
-#endif
-
-#if defined(__AVX512F__)
+#if defined(HELPA_USE_AVX512)
 
 HELPA_INLINE inline float
 reduce_add_f32x16(__m512 x) {
-    auto sumh = _mm256_add_ps(_mm512_castps512_ps256(x), _mm512_extractf32x8_ps(x, 1));
-    auto sumhh = _mm_add_ps(_mm256_castps256_ps128(sumh), _mm256_extractf128_ps(sumh, 1));
-    auto tmp1 = _mm_hadd_ps(sumhh, sumhh);
-    return tmp1[0] + tmp1[1];
+    return _mm512_reduce_add_ps(x);
 }
 
 HELPA_INLINE inline int32_t
 reduce_add_i32x16(__m512i x) {
-    auto sumh = _mm256_add_epi32(_mm512_extracti32x8_epi32(x, 0), _mm512_extracti32x8_epi32(x, 1));
-    auto sumhh = _mm_add_epi32(_mm256_castsi256_si128(sumh), _mm256_extracti128_si256(sumh, 1));
-    auto tmp1 = _mm_hadd_epi32(sumhh, sumhh);
-    return _mm_extract_epi32(tmp1, 0) + _mm_extract_epi32(tmp1, 1);
+    return _mm512_reduce_add_epi32(x);
 }
 
 HELPA_INLINE inline __m512i
@@ -98,9 +81,23 @@ cvti4x64_i8x64(__m256i x) {
     return ret;
 }
 
+HELPA_INLINE inline __m512i
+dp_u8s8x64(__m512i sum, __m512i x, __m512i y) {
+#if defined(__AVX512VNNI__)
+    // GCC bug: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=94663
+    // sum = _mm512_dpbusd_epi32(sum, x, y);
+    asm("vpdpbusd %1, %2, %0" : "+x"(sum) : "mx"(x), "x"(y));
+    return sum;
+#else
+    const __m512i ones = _mm512_set1_epi16(1);
+    auto tmp = _mm512_maddubs_epi16(x, y);
+    return _mm512_add_epi32(sum, _mm512_madd_epi16(tmp, ones));
+#endif
+}
+
 #endif
 
-#if defined(__AVX512FP16__) && defined(USE_AVX512FP16)
+#if defined(__AVX512FP16__) && defined(HELPA_USE_AVX512FP16)
 
 HELPA_INLINE inline float
 reduce_add_f16x32(__m512h x) {
@@ -110,3 +107,5 @@ reduce_add_f16x32(__m512h x) {
 #endif
 
 }  // namespace helpa
+
+#endif
