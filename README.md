@@ -1,1 +1,1 @@
-# High Performance Low Precision Arthimetic Library
+# High pErformance Low Precision Arithmetic library
