@@ -1,5 +1,5 @@
 #include "helpa/core.hpp"
 
-int main() {
-
+int
+main() {
 }
